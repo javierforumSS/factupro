@@ -1,0 +1,54 @@
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font:16px/1.5 system-ui, sans-serif; background:#f8f9fa; color:#222; -webkit-tap-highlight-color:transparent; }
+header { 
+  background: #343a40; 
+  padding: 12px 0; 
+  position: sticky; 
+  top: 0; 
+  z-index: 100; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+}
+h1, h3 { font-weight:900; }
+button { background:#007bff; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; }
+button:active { transform:scale(0.98); }
+input, button { margin:6px 0; font-size:1rem; }
+input { padding:12px; border:1px solid #ddd; border-radius:8px; }
+.card { background:white; margin:12px; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.1); }
+.full { width: 100% !important; max-width: none !important; }
+
+/* === AÑADIR ÍTEM === */
+.add-item-row { display: flex; gap: 6px; align-items: center; margin-top: 12px; }
+.add-item-row input { background:#eefdf1; margin:0; padding:10px 8px; font-size:1rem; border:1px solid #ddd; border-radius:8px; }
+.add-desc { flex:3; min-width:0; }
+.add-qty { width:35px; text-align:center; }
+.add-price { width:62px; text-align:right; }
+.add-btn { width:36px; height:36px; padding:0; font-size:1.4rem; background:#28a745; color:white; border:none; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; }
+.add-btn:active { transform:scale(0.95); }
+
+/* === ÍTEMS === */
+#items { margin:12px 0; }
+.item-row { display:flex; gap:6px; align-items:center; margin:6px 0; }
+#items .item-row input { background:#f5f5f5; margin:0; padding:8px; font-size:0.9rem; border:1px solid #ddd; border-radius:6px; }
+#items .idesc { flex:1; min-width:0; }
+#items .iqty { width:36px; text-align:center; }
+#items .iprice { width:62px; text-align:right; }
+#items .item-row button { width:36px; height:36px; padding:0; font-size:1.2rem; background:#dc3545; color:white; border:none; border-radius:6px; display:flex; align-items:center; justify-content:center; }
+
+/* === LISTA === */
+#list { margin-top:12px; }
+.invoice { padding:12px; background:#f8f9fa; border-radius:12px; margin:8px 0; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.invoice small { display:block; color:#666; font-size:0.8rem; }
+.invoice-actions button { width:60px; height:36px; padding:0; font-size:1rem; background:#007bff; color:white; display:flex; align-items:center; justify-content:center; font-weight:bold; }
+.invoice-actions button:nth-child(2) { background:#17a2b8; }
+.invoice-actions button:nth-child(3) { background:#dc3545; }
+.stats { display:flex; justify-content:space-between; margin-top:12px; font-size:0.9rem; color:#444; }
+#search { margin:12px 0; padding:10px; font-size:1rem; }
+
+/* === MENÚ === */
+.menu { position:fixed; top:0; right:-250px; width:250px; height:100%; background:white; box-shadow:-2px 0 10px rgba(0,0,0,.2); transition:right .3s; padding:20px; z-index:100; }
+.menu button { display:block; width:100%; margin:10px 0; }
+#menuBtn { background:none; color:white; font-size:1.5rem; }
+#fotoBtn, #cancelBtn { font-weight:bold; }
+.invoice img { border:1px solid #ddd; }
+
+@media (min-width:600px) { .card { margin:16px auto; max-width:600px; } }
