@@ -260,7 +260,7 @@ window.printInvoice = i => {
         </div>
         <div class="info-box"><strong>Forma de pago:</strong><br>
           ${inv.paid ? '<strong style="color:#1e7e34">PAGADA</strong>' : 'Transferencia bancaria a:'}
-          ${!inv.paid && state.config.iban ? `<div style="margin-top:5px;">IBAN: <strong>${state.config.iban}</strong></div>` : ''}
+          ${!inv.paid && state.config.iban ? `<div style="margin-top:5px;">IBAN: ${state.config.iban}</div>` : ''}
         </div>
       </div>
       ${inv.concept ? `<div style="margin:20px 0; padding:12px; background:#f0f8ff; border-radius:8px;"><strong>Concepto:</strong><br> ${inv.concept} <span style="float:right">${inv.price ? fmt(inv.price)+' €' : ''}</span></div>` : ''}
