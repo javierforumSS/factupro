@@ -15,19 +15,36 @@ const fmt = n => (n || 0).toFixed(2);
 const calcTotal = () => state.expenses.reduce((s, e) => s + e.amount, 0);
 
 // -------- FOTO ----------
-$('#fotoBtn').onclick = () => $('#photoInput').click();
+$('#fotoBtn').onclick = () => {
+  console.log('Click en botón de foto');
+  // IMPORTANTE: Resetear el input antes de abrir para que funcione en móviles
+  $('#photoInput').value = '';
+  $('#photoInput').click();
+};
 
 $('#photoInput').onchange = e => {
+  console.log('Input de foto cambió');
   const file = e.target.files[0];
-  if (!file) return;
+  if (!file) {
+    console.log('No hay archivo');
+    return;
+  }
 
+  console.log('Archivo seleccionado:', file.name, file.size);
   const reader = new FileReader();
+  
+  reader.onerror = () => {
+    console.error('Error leyendo archivo');
+    alert('Error al leer la foto');
+  };
+  
   reader.onload = ev => {
     currentPhoto = ev.target.result;
     $('#previewImg').src = currentPhoto;
     $('#preview').style.display = 'block';
-    console.log('Foto cargada correctamente'); // Debug
+    console.log('✅ Foto cargada en currentPhoto, tamaño:', currentPhoto.length);
   };
+  
   reader.readAsDataURL(file);
 };
 
@@ -35,11 +52,18 @@ $('#photoInput').onchange = e => {
 $('#form').onsubmit = e => {
   e.preventDefault();
 
+  console.log('=== GUARDANDO GASTO ===');
+  console.log('currentPhoto existe:', currentPhoto !== null);
+  console.log('state.edit:', state.edit);
+
   const desc = $('#desc').value.trim();
   const date = $('#date').value;
   const amount = parseFloat($('#amount').value.replace(',', '.')) || 0;
 
-  if (!desc || !date || amount <= 0) return alert('Faltan datos');
+  if (!desc || !date || amount <= 0) {
+    alert('Faltan datos');
+    return;
+  }
 
   // FIX: Guardar la foto actual correctamente
   let photo = null;
@@ -47,9 +71,11 @@ $('#form').onsubmit = e => {
   if (state.edit !== null) {
     // Si estamos editando, mantener la foto existente o usar la nueva
     photo = currentPhoto !== null ? currentPhoto : state.expenses[state.edit].photo;
+    console.log('Modo EDICIÓN - Foto:', photo ? 'SÍ tiene' : 'NO tiene');
   } else {
     // Si es nuevo, usar la foto actual
     photo = currentPhoto;
+    console.log('Modo NUEVO - Foto:', photo ? 'SÍ tiene' : 'NO tiene');
   }
 
   const exp = {
@@ -60,16 +86,25 @@ $('#form').onsubmit = e => {
     photo // Aquí se guarda la foto
   };
 
+  console.log('Gasto a guardar:', {
+    desc: exp.desc,
+    amount: exp.amount,
+    tienePhoto: exp.photo !== null,
+    tamañoPhoto: exp.photo ? exp.photo.length : 0
+  });
+
   if (state.edit !== null) {
     state.expenses[state.edit] = exp;
   } else {
     state.expenses.push(exp);
   }
 
-  console.log('Guardando gasto con foto:', photo ? 'SÍ' : 'NO'); // Debug
   save();
+  console.log('✅ Gasto guardado en localStorage');
+  
   resetForm();
   render();
+};
 };
 
 // -------- RESETEAR FORMULARIO ----------
@@ -78,6 +113,7 @@ const resetForm = () => {
   $('#date').valueAsDate = new Date();
   $('#preview').style.display = 'none';
   $('#previewImg').src = '';
+  $('#photoInput').value = ''; // IMPORTANTE: Resetear también el input de foto
   currentPhoto = null; // Limpiar la foto temporal
   state.edit = null;
 };
