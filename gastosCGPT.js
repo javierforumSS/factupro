@@ -61,9 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('Archivo:', file.name, 'Tamaño:', file.size);
     
-    // Limitar tamaño (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('La foto es muy grande (máx 5MB)');
+    // Limitar tamaño (2MB max para no llenar localStorage)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('⚠️ La foto es muy grande (máx 2MB). Intenta con una más pequeña o toma la foto con menor calidad.');
       return;
     }
 
@@ -75,10 +75,39 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     reader.onload = (ev) => {
-      currentPhoto = ev.target.result;
-      previewImg.src = currentPhoto;
-      preview.style.display = 'block';
-      console.log('✅ Foto cargada, tamaño base64:', currentPhoto.length);
+      // Comprimir la imagen antes de guardar
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Reducir tamaño si es muy grande (max 1200px)
+        const maxSize = 1200;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height / width) * maxSize;
+            width = maxSize;
+          } else {
+            width = (width / height) * maxSize;
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convertir a JPEG con calidad 0.7 (menor peso)
+        currentPhoto = canvas.toDataURL('image/jpeg', 0.7);
+        previewImg.src = currentPhoto;
+        preview.style.display = 'block';
+        
+        const sizeMB = (currentPhoto.length / 1024 / 1024).toFixed(2);
+        console.log('✅ Foto comprimida, tamaño:', sizeMB, 'MB');
+      };
+      img.src = ev.target.result;
     };
     
     reader.readAsDataURL(file);
@@ -276,6 +305,7 @@ window.Export = {
     a.download = `gastos_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    alert('✅ Backup descargado');
   },
   import: () => {
     const input = document.createElement('input');
@@ -306,5 +336,25 @@ window.Export = {
       reader.readAsText(file);
     };
     input.click();
+  },
+  clearAll: () => {
+    if (confirm('⚠️ ¿BORRAR TODOS LOS GASTOS? Esta acción no se puede deshacer.\n\nTe recomiendo hacer un Backup primero.')) {
+      if (confirm('¿Estás SEGURO? Se perderán todos los datos.')) {
+        localStorage.removeItem(DB);
+        state.expenses = [];
+        render();
+        alert('✅ Todos los gastos han sido eliminados');
+      }
+    }
+  },
+  checkSpace: () => {
+    try {
+      const used = new Blob([localStorage.getItem(DB) || '']).size;
+      const usedMB = (used / 1024 / 1024).toFixed(2);
+      const totalPhotos = state.expenses.filter(e => e.photo).length;
+      alert(`📊 Espacio usado: ${usedMB} MB\n🖼️ Fotos guardadas: ${totalPhotos}\n💾 Gastos totales: ${state.expenses.length}`);
+    } catch (e) {
+      alert('Error al calcular espacio');
+    }
   }
 };
