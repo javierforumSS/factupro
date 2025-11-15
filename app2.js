@@ -222,7 +222,7 @@ window.editInvoice = i => {
 /* =================== IMPRIMIR PDF =================== */
 const generateInvoiceHTML = (inv) => {
   const items = inv.items.map(it =>
-    `<tr><td style="padding:8px; border-bottom:1px solid #eee; width:60%; word-break:break-word;">${it.desc}</td><td style="text-align:center; border-bottom:1px solid #eee; width:10%;">${it.qty}</td><td style="text-align:right; border-bottom:1px solid #eee; width:15%;">${fmt(it.price)} €</td><td style="text-align:right; font-weight:600; border-bottom:1px solid #eee; width:15%;">${fmt(it.total)} €</td></tr>`
+    `<tr><td style="padding:8px; border-bottom:1px solid #eee; word-break:break-word;">${it.desc}</td><td style="text-align:center; border-bottom:1px solid #eee;">${it.qty}</td><td style="text-align:right; border-bottom:1px solid #eee;">${fmt(it.price)} €</td><td style="text-align:right; font-weight:600; border-bottom:1px solid #eee;">${fmt(it.total)} €</td></tr>`
   ).join('');
   
   const logo = state.config.logo || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5Ij5MT0dPPC90ZXh0Pjwvc3ZnPg==';
@@ -237,78 +237,202 @@ const generateInvoiceHTML = (inv) => {
     <!DOCTYPE html>
     <html><head><meta charset="UTF-8"><title>Factura ${inv.id}</title>
     <style>
-      @page { margin: 15mm; }
-      body { font-family: 'Segoe UI', Arial, sans-serif; margin:0; color:#333; }
-      .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-      .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 15px; }
-      .logo { width: 100px; height: 100px; object-fit: contain; border-radius: 8px; }
-      .company h1 { margin:0; font-size:1.4rem; color:#007bff; }
-      .invoice-title h2 { text-align: center; margin: 20px 0; font-size:1.8rem; }
-      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0; }
-      .info-box { background:#f8f9fa; padding:12px; border-radius:8px; }
-      table { width:100%; border-collapse: collapse; margin:25px 0; }
-      th { background:#007bff; color:white; padding:12px 8px; }
-      .totals { float:right; width:300px; border:1px solid #ddd; border-radius:8px; margin-top:30px; }
-      .totals td { padding:10px 15px; }
-      .totals .label { background:#f8f9fa; font-weight:600; }
-      .totals .amount { text-align:right; font-weight:600; }
-      .totals .grand { background:#007bff; color:white; font-size:1.2rem; }
-      .footer { margin-top:80px; font-size:0.8rem; color:#777; text-align:center; }
-      .paid-stamp { position:absolute; top:100px; right:50px; transform:rotate(-20deg); opacity:0.9; }
-      .paid-stamp div { background:#1e7e34; color:white; padding:20px 40px; border-radius:50px; font-size:2rem; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,.3); }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        font-family: Arial, sans-serif; 
+        color: #333; 
+        line-height: 1.4;
+        font-size: 11pt;
+      }
+      .container { 
+        width: 100%; 
+        max-width: 100%;
+        padding: 0;
+      }
+      .header { 
+        display: table;
+        width: 100%;
+        margin-bottom: 20px; 
+        border-bottom: 2px solid #007bff; 
+        padding-bottom: 10px;
+      }
+      .header-left, .header-right {
+        display: table-cell;
+        vertical-align: top;
+      }
+      .header-left { width: 120px; }
+      .header-right { text-align: right; }
+      .logo { 
+        width: 80px; 
+        height: 80px; 
+        object-fit: contain;
+      }
+      .company-name { 
+        font-size: 16pt; 
+        color: #007bff; 
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      .company-info { font-size: 9pt; line-height: 1.3; }
+      .invoice-title { 
+        text-align: center; 
+        margin: 15px 0;
+      }
+      .invoice-title h2 { 
+        font-size: 20pt; 
+        margin-bottom: 8px;
+      }
+      .invoice-title p { font-size: 10pt; }
+      .info-grid { 
+        display: table;
+        width: 100%;
+        margin: 15px 0;
+      }
+      .info-box { 
+        display: table-cell;
+        width: 48%;
+        background: #f8f9fa; 
+        padding: 10px; 
+        border-radius: 5px;
+        vertical-align: top;
+        font-size: 9pt;
+      }
+      .info-box + .info-box { 
+        margin-left: 4%;
+      }
+      .info-box strong { font-size: 10pt; }
+      .concept-box {
+        margin: 15px 0;
+        padding: 10px;
+        background: #f0f8ff;
+        border-radius: 5px;
+        font-size: 9pt;
+      }
+      table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        margin: 15px 0;
+        font-size: 9pt;
+      }
+      th { 
+        background: #007bff; 
+        color: white; 
+        padding: 8px;
+        text-align: left;
+      }
+      td { padding: 6px 8px; }
+      .totals-container {
+        width: 100%;
+        text-align: right;
+        margin-top: 20px;
+      }
+      .totals { 
+        display: inline-block;
+        border: 1px solid #ddd; 
+        border-radius: 5px;
+        min-width: 250px;
+      }
+      .totals table { margin: 0; }
+      .totals td { 
+        padding: 8px 12px;
+        font-size: 9pt;
+      }
+      .totals .label { 
+        background: #f8f9fa; 
+        font-weight: 600;
+        text-align: left;
+      }
+      .totals .amount { 
+        text-align: right; 
+        font-weight: 600;
+      }
+      .totals .grand { 
+        background: #007bff; 
+        color: white; 
+        font-size: 11pt;
+      }
+      .paid-stamp { 
+        text-align: right;
+        margin-top: 20px;
+      }
+      .paid-stamp span { 
+        display: inline-block;
+        background: #1e7e34; 
+        color: white; 
+        padding: 15px 30px; 
+        border-radius: 30px; 
+        font-size: 16pt; 
+        font-weight: bold;
+        transform: rotate(-15deg);
+      }
     </style>
     </head><body>
     <div class="container">
       <div class="header">
-        <img src="${logo}" class="logo">
-        <div class="company">
-          <h1>${state.config.name}</h1>
-          <div style="text-align:right;">
-            <div>${state.config.nif}</div>
-            ${state.config.address ? `<div>${state.config.address}</div>` : ''}
-            ${state.config.phone ? `<div>Tel: ${state.config.phone}</div>` : ''}
+        <div class="header-left">
+          <img src="${logo}" class="logo" />
+        </div>
+        <div class="header-right">
+          <div class="company-name">${state.config.name}</div>
+          <div class="company-info">
+            ${state.config.nif}<br>
+            ${state.config.address ? state.config.address + '<br>' : ''}
+            ${state.config.phone ? 'Tel: ' + state.config.phone : ''}
           </div>
         </div>
       </div>
-      <div class="invoice-title"><h2>FACTURA</h2><p>Nº Factura: ${inv.id}<br>Fecha Factura: ${inv.date}</p></div>
+      
+      <div class="invoice-title">
+        <h2>FACTURA</h2>
+        <p>Nº Factura: ${inv.id}<br>Fecha: ${inv.date}</p>
+      </div>
+      
       <div class="info-grid">
         <div class="info-box">
           <strong>Cliente:</strong><br>
           ${inv.client}
-          ${inv.clientNIF ? `<br><strong>NIF:</strong> ${inv.clientNIF}` : ''}
-          ${clientFullAddress ? `<br>${clientFullAddress}` : ''}
+          ${inv.clientNIF ? '<br><strong>NIF:</strong> ' + inv.clientNIF : ''}
+          ${clientFullAddress ? '<br>' + clientFullAddress : ''}
         </div>
-        <div class="info-box"><strong>Forma de pago:</strong><br>
-          ${inv.paid ? '<strong style="color:#1e7e34">PAGADA</strong>' : 'Transferencia bancaria a:'}
-          ${!inv.paid && state.config.iban ? `<div style="margin-top:5px;">IBAN: <strong>${state.config.iban}</strong></div>` : ''}
+        <div class="info-box">
+          <strong>Forma de pago:</strong><br>
+          ${inv.paid ? '<strong style="color:#1e7e34">PAGADA</strong>' : 'Transferencia bancaria'}
+          ${!inv.paid && state.config.iban ? '<br>IBAN: <strong>' + state.config.iban + '</strong>' : ''}
         </div>
       </div>
-      ${inv.concept ? `<div style="margin:20px 0; padding:12px; background:#f0f8ff; border-radius:8px;"><strong>Concepto:</strong><br> ${inv.concept} <span style="float:right">${inv.price ? fmt(inv.price)+' €' : ''}</span></div>` : ''}
-      ${inv.items.length ? `<table style="width:100%; border-collapse:collapse;">
-  <thead>
-    <tr>
-      <th style="text-align:left; width:60%;">Descripción</th>
-      <th style="text-align:center; width:10%;">Uds</th>
-      <th style="text-align:right; width:15%;">Precio</th>
-      <th style="text-align:right; width:15%;">Total</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${items}
-    <tr style="background:#f0f8ff">
-      <td colspan="3" style="text-align:right; font-weight:600;font-size:1.1rem">Subtotal</td>
-      <td style="text-align:right;font-weight:600;font-size:1.1rem">${fmt(inv.subtotal)} €</td>
-    </tr>
-  </tbody>
-</table>` : ''}
-      <div class="totals">
-        <table style="width:100%">
-          <tr><td class="label">Base</td><td class="amount">${fmt(inv.subtotal)} €</td></tr>
-          <tr><td class="label">IVA 21%</td><td class="amount">${fmt(inv.iva)} €</td></tr>
-          <tr class="grand"><td class="label">TOTAL</td><td class="amount">${fmt(inv.total)} €</td></tr>
-        </table>
+      
+      ${inv.concept ? `<div class="concept-box"><strong>Concepto:</strong> ${inv.concept} ${inv.price ? '<span style="float:right">' + fmt(inv.price) + ' €</span>' : ''}</div>` : ''}
+      
+      ${inv.items.length ? `
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50%;">Descripción</th>
+            <th style="width:15%; text-align:center;">Uds</th>
+            <th style="width:17.5%; text-align:right;">Precio</th>
+            <th style="width:17.5%; text-align:right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items}
+          <tr style="background:#f0f8ff; font-weight:600;">
+            <td colspan="3" style="text-align:right; padding:10px;">Subtotal</td>
+            <td style="text-align:right; padding:10px;">${fmt(inv.subtotal)} €</td>
+          </tr>
+        </tbody>
+      </table>` : ''}
+      
+      <div class="totals-container">
+        <div class="totals">
+          <table>
+            <tr><td class="label">Base imponible</td><td class="amount">${fmt(inv.subtotal)} €</td></tr>
+            <tr><td class="label">IVA 21%</td><td class="amount">${fmt(inv.iva)} €</td></tr>
+            <tr class="grand"><td class="label">TOTAL</td><td class="amount">${fmt(inv.total)} €</td></tr>
+          </table>
+        </div>
       </div>
-      ${inv.paid ? `<div class="paid-stamp"><div>PAGADO</div></div>` : ''}
+      
+      ${inv.paid ? `<div class="paid-stamp"><span>PAGADO</span></div>` : ''}
     </div>
     </body></html>
   `;
@@ -345,11 +469,22 @@ window.shareInvoice = async (i) => {
     
     // Configuración del PDF
     const opt = {
-      margin: 10,
+      margin: [15, 15, 15, 15],
       filename: `Factura_${inv.id}_${inv.client.replace(/\s+/g, '_')}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true,
+        letterRendering: true,
+        logging: false
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait',
+        compress: true
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
     
     // Generar PDF como blob
