@@ -253,12 +253,12 @@ window.printInvoice = i => {
       <div class="invoice-title"><h2>FACTURA</h2><p>Nº Factura: ${inv.id}<br>Fecha Factura: ${inv.date}</p></div>
       <div class="info-grid">
         <div class="info-box">
-          <strong>Cliente:</strong><br>
+          <strong>CLIENTE:</strong><br>
           ${inv.client}
           ${inv.clientNIF ? `<br>NIF: ${inv.clientNIF}` : ''}
           ${clientFullAddress ? `<br>${clientFullAddress}` : ''}
         </div>
-        <div class="info-box"><strong>Forma de pago:</strong><br>
+        <div class="info-box"><strong>FORMA DE PAGO:</strong><br>
           ${inv.paid ? '<strong style="color:#1e7e34">PAGADA</strong>' : 'Transferencia bancaria a:'}
           ${!inv.paid && state.config.iban ? `<div style="margin-top:5px;">IBAN: ${state.config.iban}</div>` : ''}
         </div>
