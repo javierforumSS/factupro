@@ -9,8 +9,7 @@
   <link rel="apple-touch-icon" href="icon-192.png" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <script defer src="gastosCGPT.js"></script>
-</head>
+  
 <body>
   <header>
     <div style="display:flex; justify-content:space-between; align-items:center; padding:0 12px;">
@@ -33,7 +32,7 @@
 
   <main id="app">
     <form id="form" class="card">
-      <h3 style="font-size:1.5rem;font-weight:900; margin-bottom:12px;">NUEVO GASTO2</h3>
+      <h3 style="font-size:1.5rem;font-weight:900; margin-bottom:12px;">NUEVO GASTO3</h3>
       <div style="text-align:center; margin:16px 0;">
         <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" />
         <button type="button" id="fotoBtn"
@@ -75,5 +74,7 @@
     <button onclick="Export.import()">Importar Gastos</button>
     <button onclick="location.reload()">Recargar</button>
   </nav>
+  <script src="gastosCGPT.js?v=3"></script>
+</head>
 </body>
 </html>
