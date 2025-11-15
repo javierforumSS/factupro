@@ -26,6 +26,7 @@ $('#photoInput').onchange = e => {
     currentPhoto = ev.target.result;
     $('#previewImg').src = currentPhoto;
     $('#preview').style.display = 'block';
+    console.log('Foto cargada correctamente'); // Debug
   };
   reader.readAsDataURL(file);
 };
@@ -40,17 +41,23 @@ $('#form').onsubmit = e => {
 
   if (!desc || !date || amount <= 0) return alert('Faltan datos');
 
-  // FOTO SEGURA (no se borra al editar)
-  const photo = currentPhoto !== null
-    ? currentPhoto
-    : (state.edit !== null ? state.expenses[state.edit].photo : null);
+  // FIX: Guardar la foto actual correctamente
+  let photo = null;
+  
+  if (state.edit !== null) {
+    // Si estamos editando, mantener la foto existente o usar la nueva
+    photo = currentPhoto !== null ? currentPhoto : state.expenses[state.edit].photo;
+  } else {
+    // Si es nuevo, usar la foto actual
+    photo = currentPhoto;
+  }
 
   const exp = {
     id: state.edit !== null ? state.expenses[state.edit].id : Date.now(),
     desc,
     date,
     amount,
-    photo
+    photo // Aquí se guarda la foto
   };
 
   if (state.edit !== null) {
@@ -59,6 +66,7 @@ $('#form').onsubmit = e => {
     state.expenses.push(exp);
   }
 
+  console.log('Guardando gasto con foto:', photo ? 'SÍ' : 'NO'); // Debug
   save();
   resetForm();
   render();
@@ -69,7 +77,8 @@ const resetForm = () => {
   $('#form').reset();
   $('#date').valueAsDate = new Date();
   $('#preview').style.display = 'none';
-  currentPhoto = null;
+  $('#previewImg').src = '';
+  currentPhoto = null; // Limpiar la foto temporal
   state.edit = null;
 };
 
@@ -93,20 +102,29 @@ const render = () => {
     return `
       <div class="invoice" style="padding:12px; background:#f8f9fa; border-radius:12px; margin:8px 0;">
         <div style="flex:1;">
-          <b>${exp.desc}</b>
-          <small>${exp.date} • ${fmt(exp.amount)} €</small>
-          ${exp.photo ? `<div style="margin-top:8px;"><img src="${exp.photo}" style="width:80px; height:80px; object-fit:cover; border-radius:6px;" /></div>` : ''}
+          <b>${exp.desc}</b><br>
+          <small style="color:#666;">${exp.date} • ${fmt(exp.amount)} €</small>
+          ${exp.photo ? `<div style="margin-top:8px;"><img src="${exp.photo}" style="width:100px; height:100px; object-fit:cover; border-radius:6px; border:2px solid #ddd;" onclick="viewPhoto('${exp.photo}')" /></div>` : '<small style="color:#999;">Sin foto</small>'}
         </div>
         <div class="invoice-actions">
-          <button onclick="editExpense(${idx})">Editar</button>
-          ${isLast ? `<button onclick="deleteExpense(${idx})" style="background:#dc3545; color:white;">Borrar</button>` : ''}
+          <button onclick="editExpense(${idx})" style="background:#ffc107; color:#000; padding:8px 12px; border:none; border-radius:6px; font-weight:600;">Editar</button>
+          ${isLast ? `<button onclick="deleteExpense(${idx})" style="background:#dc3545; color:white; padding:8px 12px; border:none; border-radius:6px; font-weight:600;">Borrar</button>` : ''}
         </div>
       </div>
     `;
-  }).join('') || `<p style="text-align:center; color:#999;">Sin gastos</p>`;
+  }).join('') || `<p style="text-align:center; color:#999; padding:20px;">Sin gastos registrados</p>`;
 
-  $('#total').textContent = fmt(calcTotal());
+  $('#total').textContent = fmt(calcTotal()) + ' €';
   $('#count').textContent = state.expenses.length;
+};
+
+// -------- VER FOTO GRANDE ----------
+window.viewPhoto = (photo) => {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center; z-index:9999;';
+  modal.innerHTML = `<img src="${photo}" style="max-width:90%; max-height:90%; border-radius:8px;" onclick="this.parentElement.remove()" />`;
+  modal.onclick = () => modal.remove();
+  document.body.appendChild(modal);
 };
 
 // -------- EDITAR ----------
@@ -127,12 +145,13 @@ window.editExpense = i => {
   }
 
   state.edit = i;
+  window.scrollTo(0, 0); // Scroll arriba para ver el formulario
 };
 
 // -------- BORRAR ----------
 window.deleteExpense = i => {
   if (i !== state.expenses.length - 1)
-    return alert('Solo se puede borrar el último');
+    return alert('Solo se puede borrar el último gasto');
 
   if (confirm('¿Borrar este gasto?')) {
     state.expenses.splice(i, 1);
@@ -157,12 +176,57 @@ document.addEventListener('click', e => {
   }
 });
 
+// -------- CONFIG (Placeholder) ----------
+window.Config = {
+  open: () => alert('Función de configuración de empresa - Por implementar')
+};
+
+// -------- EXPORT (Placeholder) ----------
+window.Export = {
+  backup: () => {
+    const data = JSON.stringify(state.expenses, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gastos_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  import: () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const imported = JSON.parse(ev.target.result);
+          if (confirm(`¿Importar ${imported.length} gastos? Esto reemplazará los datos actuales.`)) {
+            state.expenses = imported;
+            save();
+            render();
+            alert('Gastos importados correctamente');
+          }
+        } catch (err) {
+          alert('Error al importar: archivo no válido');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+};
+
 // Fecha por defecto
 $('#date').valueAsDate = new Date();
 
 // -------- SW --------
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
+  navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
+// -------- INIT --------
 load();
