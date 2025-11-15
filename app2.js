@@ -450,7 +450,7 @@ window.printInvoice = i => {
 /* =================== COMPARTIR/ENVIAR FACTURA =================== */
 window.shareInvoice = async (i) => {
   const inv = state.invoices[i];
-  
+
   try {
     // Cargar html2pdf si no está cargado
     if (typeof html2pdf === 'undefined') {
@@ -459,83 +459,106 @@ window.shareInvoice = async (i) => {
       document.head.appendChild(script);
       await new Promise(resolve => script.onload = resolve);
     }
-    
-    // Crear elemento temporal con el HTML de la factura
+
+    // Crear contenedor temporal
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = generateInvoiceHTML(inv);
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '0';
+    tempDiv.style.width = '210mm'; // A4 width
+    tempDiv.style.padding = '15mm';
+    tempDiv.style.background = 'white';
     document.body.appendChild(tempDiv);
-    
-    // Configuración del PDF
+
+    const container = tempDiv.querySelector('.container');
+    if (!container) throw new Error('No se encontró .container');
+
+    // === ESPERAR A QUE TODAS LAS IMÁGENES CARGUEN ===
+    const images = container.querySelectorAll('img');
+    await Promise.all(Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => {
+          console.warn('Error cargando imagen:', img.src);
+          resolve(); // Continuar aunque falle
+        };
+      });
+    }));
+
+    // === FORZAR REFLOW PARA RENDERIZADO ===
+    container.offsetHeight; // Trigger reflow
+
+    // === CONFIGURACIÓN OPTIMIZADA DE PDF ===
     const opt = {
-      margin: [15, 15, 15, 15],
+      margin: [10, 10, 10, 10],
       filename: `Factura_${inv.id}_${inv.client.replace(/\s+/g, '_')}.pdf`,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { 
-        scale: 2, 
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
         useCORS: true,
-        letterRendering: true,
-        logging: false
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: container.scrollWidth,
+        height: container.scrollHeight,
+        windowWidth: 794, // A4 @ 96dpi ≈ 794px
+        windowHeight: container.scrollHeight * 2
       },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
         orientation: 'portrait',
         compress: true
       },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
-    
-    // Generar PDF como blob
-    const pdfBlob = await html2pdf().from(tempDiv.querySelector('.container')).set(opt).outputPdf('blob');
-    
-    // Limpiar elemento temporal
+
+    // === GENERAR PDF ===
+    const pdfBlob = await html2pdf()
+      .from(container)
+      .set(opt)
+      .outputPdf('blob');
+
+    // Limpiar
     document.body.removeChild(tempDiv);
-    
-    // Intentar compartir con Web Share API (móviles)
-    if (navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], opt.filename)] })) {
-      const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-      
+
+    // === COMPARTIR O DESCARGAR ===
+    const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
-        title: `Factura ${inv.id} - ${inv.client}`,
-        text: `Factura ${inv.id} por ${fmt(inv.total)} €`,
+        title: `Factura ${inv.id}`,
+        text: `Factura por ${fmt(inv.total)} €`,
         files: [file]
       });
-      
-      console.log('PDF compartido');
     } else {
-      // Fallback: Descargar PDF y abrir email
+      // Descargar
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
       a.download = opt.filename;
       a.click();
       URL.revokeObjectURL(url);
-      
-      // Abrir cliente de email con el mensaje
+
+      // Abrir email
       const subject = encodeURIComponent(`Factura ${inv.id} - ${state.config.name}`);
       const body = encodeURIComponent(
         `Estimado/a ${inv.client},\n\n` +
-        `Adjunto encontrará la factura ${inv.id} por un importe de ${fmt(inv.total)} €.\n\n` +
-        `Detalles:\n` +
-        `- Fecha: ${inv.date}\n` +
-        `- Base imponible: ${fmt(inv.subtotal)} €\n` +
-        `- IVA (21%): ${fmt(inv.iva)} €\n` +
-        `- TOTAL: ${fmt(inv.total)} €\n\n` +
-        `${inv.paid ? 'Esta factura ya ha sido pagada.\n\n' : ''}` +
+        `Adjunta la factura ${inv.id} por ${fmt(inv.total)} €.\n\n` +
         `Saludos,\n${state.config.name}`
       );
-      
       setTimeout(() => {
         window.location.href = `mailto:?subject=${subject}&body=${body}`;
       }, 500);
-      
-      alert('PDF descargado. Se abrirá tu cliente de email para adjuntarlo.');
+
+      alert('PDF descargado. Ábrelo y adjúntalo al email.');
     }
+
   } catch (error) {
     console.error('Error generando PDF:', error);
-    alert('Error al generar el PDF. Intenta usar el botón "PDF" para imprimir.');
+    alert('Error al generar el PDF. Usa el botón "PDF" para imprimir directamente.');
   }
 };
 
