@@ -14,6 +14,7 @@ const calcTotal = () => state.expenses.reduce((s, e) => s + e.amount, 0);
 
 $('#fotoBtn').onclick = () => $('#photoInput').click();
 
+
 $('#photoInput').onchange = e => {
   const file = e.target.files[0];
   if (!file) return;
@@ -31,12 +32,12 @@ $('#form').onsubmit = e => {
   const desc = $('#desc').value.trim();
   const date = $('#date').value;
   const amount = parseFloat($('#amount').value.replace(',', '.')) || 0;
-
   if (!desc || !date || amount <= 0) return alert('Faltan datos');
 
   const exp = {
     id: state.edit !== null ? state.expenses[state.edit].id : Date.now(),
-    desc, date, amount, photo: currentPhoto
+    desc, date, amount,
+    photo: currentPhoto || null  // AQUÍ ESTABA EL ERROR
   };
 
   if (state.edit !== null) {
@@ -44,7 +45,6 @@ $('#form').onsubmit = e => {
   } else {
     state.expenses.push(exp);
   }
-
   save();
   resetForm();
   render();
