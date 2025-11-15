@@ -59,13 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    console.log('Archivo:', file.name, 'Tamaño:', file.size);
-    
-    // Limitar tamaño (2MB max para no llenar localStorage)
-    if (file.size > 2 * 1024 * 1024) {
-      alert('⚠️ La foto es muy grande (máx 2MB). Intenta con una más pequeña o toma la foto con menor calidad.');
-      return;
-    }
+    console.log('Archivo original:', file.name, 'Tamaño:', (file.size / 1024 / 1024).toFixed(2), 'MB');
 
     const reader = new FileReader();
     
@@ -75,15 +69,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     reader.onload = (ev) => {
-      // Comprimir la imagen antes de guardar
+      // Comprimir SIEMPRE, sin importar el tamaño original
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
         
-        // Reducir tamaño si es muy grande (max 1200px)
-        const maxSize = 1200;
+        // Reducir tamaño si es muy grande (max 800px para ahorrar más espacio)
+        const maxSize = 800;
         if (width > maxSize || height > maxSize) {
           if (width > height) {
             height = (height / width) * maxSize;
@@ -99,13 +93,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Convertir a JPEG con calidad 0.7 (menor peso)
-        currentPhoto = canvas.toDataURL('image/jpeg', 0.7);
+        // Convertir a JPEG con calidad 0.6 (buena calidad pero poco peso)
+        currentPhoto = canvas.toDataURL('image/jpeg', 0.6);
         previewImg.src = currentPhoto;
         preview.style.display = 'block';
         
         const sizeMB = (currentPhoto.length / 1024 / 1024).toFixed(2);
-        console.log('✅ Foto comprimida, tamaño:', sizeMB, 'MB');
+        console.log('✅ Foto comprimida:', sizeMB, 'MB (era', (file.size / 1024 / 1024).toFixed(2), 'MB)');
       };
       img.src = ev.target.result;
     };
