@@ -255,7 +255,7 @@ window.printInvoice = i => {
         <div class="info-box">
           <strong>CLIENTE:</strong><br>
           ${inv.client}
-          
+          ${inv.clientNIF ? `<br>NIFio: ${inv.clientNIF}` : ''}
           ${clientFullAddress ? `<br>${clientFullAddress}` : ''}
         </div>
         <div class="info-box"><strong>FORMA DE PAGO:</strong><br>
