@@ -263,7 +263,7 @@ window.printInvoice = i => {
           ${!inv.paid && state.config.iban ? `<div style="margin-top:5px;">IBAN: ${state.config.iban}</div>` : ''}
         </div>
       </div>
-      ${inv.concept ? `<div style="margin:20px 0; padding:12px; background:#f0f8ff; border-radius:8px;"><strong>Concepto:</strong><br> ${inv.concept} <span style="float:right">${inv.price ? fmt(inv.price)+' €' : ''}</span></div>` : ''}
+      ${inv.concept ? `<div style="margin:20px 0; padding:12px; background:#f0f8ff; border-radius:8px;"><strong>CONCEPTO:</strong><br> ${inv.concept} <span style="float:right">${inv.price ? fmt(inv.price)+' €' : ''}</span></div>` : ''}
       ${inv.items.length ? `<table style="width:100%; border-collapse:collapse;">
   <thead>
     <tr>
