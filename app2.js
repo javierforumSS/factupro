@@ -72,12 +72,16 @@ $('#paidCheck').onchange = () => {
 $('#form').onsubmit = e => {
   e.preventDefault();
   
+  console.log('=== GUARDANDO FACTURA ===');
+  
   // NUEVOS CAMPOS DEL CLIENTE
   const client = $('#client').value.trim();
   const clientNIF = $('#NIF').value.trim();
   const clientAddress = $('#direccion').value.trim();
   const clientCP = $('#cp').value.trim();
   const clientCity = $('#ciudad').value.trim();
+  
+  console.log('Datos cliente:', { client, clientNIF, clientAddress, clientCP, clientCity });
   
   const date = $('#date').value;
   const concept = $('#concept').value.trim();
@@ -111,6 +115,8 @@ $('#form').onsubmit = e => {
     paymentMethod: isPaid ? 'FACTURA PAGADA' : ''
   };
 
+  console.log('Factura a guardar:', inv);
+
   if (state.edit !== null) {
     state.invoices[state.edit] = inv;
   } else {
@@ -119,6 +125,7 @@ $('#form').onsubmit = e => {
   save();
   resetForm();
   render();
+  alert('✅ Factura guardada');
 };
 
 const resetForm = () => {
@@ -147,6 +154,7 @@ const render = () => {
         <div class="invoice-actions">
           <button onclick="editInvoice(${realIndex})">Editar</button>
           <button onclick="printInvoice(${realIndex})">PDF</button>
+          <button onclick="shareInvoice(${realIndex})" style="background:#17a2b8; color:white;">📧 Enviar</button>
           ${isLast ? `<button onclick="deleteInvoice(${realIndex})" style="background:#dc3545;color:white;font-weight:bold;">Borrar</button>` : ''}
         </div>
       </div>
@@ -181,12 +189,23 @@ window.deleteInvoice = i => {
 window.editInvoice = i => {
   const inv = state.invoices[i];
   
+  console.log('=== EDITANDO FACTURA ===');
+  console.log('Datos de la factura:', inv);
+  
   // CAMPOS DEL CLIENTE
   $('#client').value = inv.client;
   $('#NIF').value = inv.clientNIF || '';
   $('#direccion').value = inv.clientAddress || '';
   $('#cp').value = inv.clientCP || '';
   $('#ciudad').value = inv.clientCity || '';
+  
+  console.log('Campos rellenados:', {
+    client: $('#client').value,
+    nif: $('#NIF').value,
+    direccion: $('#direccion').value,
+    cp: $('#cp').value,
+    ciudad: $('#ciudad').value
+  });
   
   $('#date').value = inv.date;
   $('#concept').value = inv.concept || '';
@@ -195,11 +214,13 @@ window.editInvoice = i => {
   isPaid = inv.paid;
   $('#paidCheck').checked = isPaid;
   renderItems();
+  
+  // Scroll al formulario
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 /* =================== IMPRIMIR PDF =================== */
-window.printInvoice = i => {
-  const inv = state.invoices[i];
+const generateInvoiceHTML = (inv) => {
   const items = inv.items.map(it =>
     `<tr><td style="padding:8px; border-bottom:1px solid #eee; width:60%; word-break:break-word;">${it.desc}</td><td style="text-align:center; border-bottom:1px solid #eee; width:10%;">${it.qty}</td><td style="text-align:right; border-bottom:1px solid #eee; width:15%;">${fmt(it.price)} €</td><td style="text-align:right; font-weight:600; border-bottom:1px solid #eee; width:15%;">${fmt(it.total)} €</td></tr>`
   ).join('');
@@ -212,8 +233,7 @@ window.printInvoice = i => {
     inv.clientCP && inv.clientCity ? `${inv.clientCP} ${inv.clientCity}` : (inv.clientCP || inv.clientCity)
   ].filter(Boolean).join('<br>');
   
-  const win = window.open('', '_blank');
-  win.document.write(`
+  return `
     <!DOCTYPE html>
     <html><head><meta charset="UTF-8"><title>Factura ${inv.id}</title>
     <style>
@@ -253,17 +273,17 @@ window.printInvoice = i => {
       <div class="invoice-title"><h2>FACTURA</h2><p>Nº Factura: ${inv.id}<br>Fecha Factura: ${inv.date}</p></div>
       <div class="info-grid">
         <div class="info-box">
-          <strong>CLIENTE:</strong><br>
+          <strong>Cliente:</strong><br>
           ${inv.client}
-          ${inv.clientNIF ? `<br>NIF: ${inv.clientNIF}` : ''}
+          ${inv.clientNIF ? `<br><strong>NIF:</strong> ${inv.clientNIF}` : ''}
           ${clientFullAddress ? `<br>${clientFullAddress}` : ''}
         </div>
-        <div class="info-box"><strong>FORMA DE PAGO:</strong><br>
+        <div class="info-box"><strong>Forma de pago:</strong><br>
           ${inv.paid ? '<strong style="color:#1e7e34">PAGADA</strong>' : 'Transferencia bancaria a:'}
-          ${!inv.paid && state.config.iban ? `<div style="margin-top:5px;">IBAN: ${state.config.iban}</div>` : ''}
+          ${!inv.paid && state.config.iban ? `<div style="margin-top:5px;">IBAN: <strong>${state.config.iban}</strong></div>` : ''}
         </div>
       </div>
-      ${inv.concept ? `<div style="margin:20px 0; padding:12px; background:#f0f8ff; border-radius:8px;"><strong>CONCEPTO:</strong><br> ${inv.concept} <span style="float:right">${inv.price ? fmt(inv.price)+' €' : ''}</span></div>` : ''}
+      ${inv.concept ? `<div style="margin:20px 0; padding:12px; background:#f0f8ff; border-radius:8px;"><strong>Concepto:</strong><br> ${inv.concept} <span style="float:right">${inv.price ? fmt(inv.price)+' €' : ''}</span></div>` : ''}
       ${inv.items.length ? `<table style="width:100%; border-collapse:collapse;">
   <thead>
     <tr>
@@ -290,10 +310,98 @@ window.printInvoice = i => {
       </div>
       ${inv.paid ? `<div class="paid-stamp"><div>PAGADO</div></div>` : ''}
     </div>
-    <script>setTimeout(() => print(), 800);</script>
     </body></html>
-  `);
+  `;
+};
+
+window.printInvoice = i => {
+  const inv = state.invoices[i];
+  const html = generateInvoiceHTML(inv);
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.write(`<script>setTimeout(() => print(), 800);</script>`);
   win.document.close();
+};
+
+/* =================== COMPARTIR/ENVIAR FACTURA =================== */
+window.shareInvoice = async (i) => {
+  const inv = state.invoices[i];
+  
+  try {
+    // Cargar html2pdf si no está cargado
+    if (typeof html2pdf === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      document.head.appendChild(script);
+      await new Promise(resolve => script.onload = resolve);
+    }
+    
+    // Crear elemento temporal con el HTML de la factura
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = generateInvoiceHTML(inv);
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    document.body.appendChild(tempDiv);
+    
+    // Configuración del PDF
+    const opt = {
+      margin: 10,
+      filename: `Factura_${inv.id}_${inv.client.replace(/\s+/g, '_')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    // Generar PDF como blob
+    const pdfBlob = await html2pdf().from(tempDiv.querySelector('.container')).set(opt).outputPdf('blob');
+    
+    // Limpiar elemento temporal
+    document.body.removeChild(tempDiv);
+    
+    // Intentar compartir con Web Share API (móviles)
+    if (navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], opt.filename)] })) {
+      const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
+      
+      await navigator.share({
+        title: `Factura ${inv.id} - ${inv.client}`,
+        text: `Factura ${inv.id} por ${fmt(inv.total)} €`,
+        files: [file]
+      });
+      
+      console.log('PDF compartido');
+    } else {
+      // Fallback: Descargar PDF y abrir email
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = opt.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      // Abrir cliente de email con el mensaje
+      const subject = encodeURIComponent(`Factura ${inv.id} - ${state.config.name}`);
+      const body = encodeURIComponent(
+        `Estimado/a ${inv.client},\n\n` +
+        `Adjunto encontrará la factura ${inv.id} por un importe de ${fmt(inv.total)} €.\n\n` +
+        `Detalles:\n` +
+        `- Fecha: ${inv.date}\n` +
+        `- Base imponible: ${fmt(inv.subtotal)} €\n` +
+        `- IVA (21%): ${fmt(inv.iva)} €\n` +
+        `- TOTAL: ${fmt(inv.total)} €\n\n` +
+        `${inv.paid ? 'Esta factura ya ha sido pagada.\n\n' : ''}` +
+        `Saludos,\n${state.config.name}`
+      );
+      
+      setTimeout(() => {
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      }, 500);
+      
+      alert('PDF descargado. Se abrirá tu cliente de email para adjuntarlo.');
+    }
+  } catch (error) {
+    console.error('Error generando PDF:', error);
+    alert('Error al generar el PDF. Intenta usar el botón "PDF" para imprimir.');
+  }
 };
 
 /* =================== CONFIG Y MODALES =================== */
